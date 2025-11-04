@@ -4,6 +4,10 @@ const app = express();
 import connectDB from "./config/db.js";
 import expressSession from "express-session";
 import dotenv from "dotenv";
+// importing routes
+import userRoutes from "./routes/user.js";
+
+app.use(express.json());
 
 dotenv.config();
 
@@ -25,9 +29,8 @@ app.use(
   })
 );
 
-// app.get("/", (req, res) => {
-//   res.render("home");
-// });
+// using routes
+app.use("/api/v1", userRoutes);
 
 const port = process.env.PORT || 3000;
 
