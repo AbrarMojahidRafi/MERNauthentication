@@ -1,4 +1,3 @@
-// config/redis.js
 import { createClient } from "redis";
 import dotenv from "dotenv";
 
@@ -11,11 +10,20 @@ if (!redisURL) {
     process.exit(1);
 }
 
-export const redisClient = createClient({ url: redisURL });
+export const redisClient = createClient({
+    url: redisURL,
+});
 
-redisClient.on("error", (err) => console.error("Redis Client Error", err));
+redisClient.on("error", (err) => console.log("Redis Client Error", err));
 
-await redisClient.connect();
-console.log("✅ Connected to Redis successfully");
-
-export default redisClient;
+export const connectRedis = async () => {
+    await redisClient
+        .connect()
+        .then(() => {
+            console.log("Connected to Redis successfully");
+        })
+        .catch((err) => {
+            console.error("Redis connection error:", err);
+            process.exit(1);
+        });
+};

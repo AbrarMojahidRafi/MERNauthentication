@@ -1,61 +1,56 @@
-const Joi = require("joi");
-const mongoose = require("mongoose");
+import Joi from "joi";
+import mongoose from "mongoose";
 
-const userSchema = mongoose.Schema({
-    name: {
-        type: String,
-        trim: true,
-        required: [true, 'Name is required'],
-        minLength: [3, 'Name must be at least 3 characters'],
-        maxLength: [50, 'Name cannot exceed 50 characters'],
-        index: true
+const userSchema = mongoose.Schema(
+    {
+        name: {
+            type: String,
+            trim: true,
+            required: [true, "Name is required"],
+            minLength: [3, "Name must be at least 3 characters"],
+            maxLength: [50, "Name cannot exceed 50 characters"],
+            index: true,
+        },
+        email: {
+            type: String,
+            trim: true,
+            required: [true, "Email is required"],
+            unique: true,
+            lowercase: true,
+            index: true,
+        },
+        password: {
+            type: String,
+            required: [true, "Password is required"],
+            minLength: [8, "Password must be at least 8 characters"],
+            select: false, // Hide password by default when querying
+        },
+        role: {
+            type: String,
+            enum: ["user", "admin"],
+            default: "user",
+        },
     },
-    email: {
-        type: String,
-        trim: true,
-        required: [true, 'Email is required'],
-        unique: true,
-        lowercase: true,
-        index: true
-    },
-    password: {
-        type: String,
-        required: [true, 'Password is required'],
-        minLength: [8, 'Password must be at least 8 characters'],
-        select: false // Hide password by default when querying
-    },
-    role: {
-        type: String,
-        enum: ['user', 'admin'],
-        default: 'user'
+    {
+        timestamps: true, // This will add createdAt and updatedAt fields
     }
-}, {
-    timestamps: true // This will add createdAt and updatedAt fields
-});
+);
 
 function validateUserModel(data) {
-    const userSchema = Joi.object({
-        name: Joi.string()
-            .min(3)
-            .max(50)
-            .required(),
-        
+    const userValidationSchema = Joi.object({
+        name: Joi.string().min(3).max(50).required(),
+
         email: Joi.string()
             .email({ tlds: { allow: true } })
             .lowercase()
             .required(),
-        
-        password: Joi.string()
-            .min(8)
-            .max(128)
-            .required(),
-        
-        role: Joi.string()
-            .valid('user', 'admin')
-            .default('user')
+
+        password: Joi.string().min(8).max(128).required(),
+
+        role: Joi.string().valid("user", "admin").default("user"),
     });
 
-    let { error } = userSchema.validate(data);
+    let { error } = userValidationSchema.validate(data);
     return error;
 }
 
@@ -77,6 +72,6 @@ function validateUserModel(data) {
 //     }
 // }
 
-let UserModel = mongoose.model("User", userSchema);
+const UserModel = mongoose.model("User", userSchema);
 
-module.exports = { validateUserModel, UserModel };
+export { validateUserModel, UserModel };

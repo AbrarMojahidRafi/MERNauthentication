@@ -6,9 +6,11 @@ import expressSession from "express-session";
 import dotenv from "dotenv";
 // importing routes
 import userRoutes from "./routes/user.js";
-import { createClient } from "redis";
-import redisClient from "./config/redis.js"; // ✅ use the separate redis file
+// import { createClient } from "redis";   // Remove Redis client setup from here. because we are moving it to config/redis.js
+import { connectRedis } from "./config/redis.js";
 
+// Remove the entire Redis client setup block and replace with:
+await connectRedis();
 
 app.use(express.json());
 
