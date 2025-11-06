@@ -6,6 +6,9 @@ import expressSession from "express-session";
 import dotenv from "dotenv";
 // importing routes
 import userRoutes from "./routes/user.js";
+import { createClient } from "redis";
+import redisClient from "./config/redis.js"; // ✅ use the separate redis file
+
 
 app.use(express.json());
 
@@ -22,11 +25,11 @@ app.use(json());
 app.use(urlencoded({ extended: true }));
 // app.use(static(join(__dirname, "public")));
 app.use(
-  expressSession({
-    secret: "random stuff",
-    resave: false,
-    saveUninitialized: false,
-  })
+    expressSession({
+        secret: "random stuff",
+        resave: false,
+        saveUninitialized: false,
+    })
 );
 
 // using routes
@@ -35,5 +38,5 @@ app.use("/api/v1", userRoutes);
 const port = process.env.PORT || 3000;
 
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+    console.log(`Server is running on port ${port}`);
 });
