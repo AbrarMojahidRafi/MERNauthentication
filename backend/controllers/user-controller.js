@@ -1,4 +1,4 @@
-import { registerSchema } from "../config/zod.js";
+import { loginSchema, registerSchema } from "../config/zod.js";
 import TryCatch from "../middlewares/TryCatch.js";
 import sanitize from "mongo-sanitize";
 import { UserModel } from "../models/User.js";
@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import sendMail from "../config/sendMail.js";
 import { redisClient } from "../config/redis.js";
-import { getVerifyEmailHtml } from "../config/html.js";
+import { getOtpHtml, getVerifyEmailHtml } from "../config/html.js";
 
 export const registerUser = TryCatch(async (req, res) => {
     const senitizedBody = sanitize(req.body);
@@ -122,5 +122,75 @@ export const verifyEmail = TryCatch(async (req, res) => {
     res.status(201).json({
         message: "Email verified and user registered successfully",
         user: { id: newUser._id, email: newUser.email, name: newUser.name },
+    });
+});
+
+// Now Lets login user
+export const loginUser = TryCatch(async (req, res) => {
+    // login logic will be here
+    const senitizedBody = sanitize(req.body);
+    const validatedData = loginSchema.safeParse(senitizedBody);
+
+    if (!validatedData.success) {
+        let zorError = validatedData.error;
+
+        let firstErrorMessage = "validation error";
+        let allErrors = [];
+
+        if (zorError.issues && Array.isArray(zorError.issues)) {
+            allErrors = zorError.issues.map((issue) => ({
+                field: issue.path ? issue.path.join(".") : "unknown",
+                message: issue.message || "Invalid value",
+                code: issue.code || "invalid_type",
+            }));
+
+            firstErrorMessage = allErrors[0].message || firstErrorMessage;
+        }
+
+        return res.status(400).json({
+            message: firstErrorMessage,
+            errors: allErrors,
+        });
+    }
+
+    const { email, password } = validatedData.data; // finally getting the email, and password
+
+    // rate limit
+    const rateLimitkey = `login-rate-limit:${req.ip}:${email}`;
+    if (await redisClient.get(rateLimitkey)) {
+        return res.status(429).json({
+            message: "Too many registration attempts. Please try again later.",
+        });
+    }
+
+    // Get user from DB by email.
+    const user = await UserModel.findOne({ email }).select("+password");
+    if (!user) {
+        // if user not found
+        return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // compare password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+        // if password not match
+        return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // If all ok, then send an OTP to user's email for login verification
+    // generate 6 digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpKey = `login-otp:${email}`; // we are sending otp to this email
+    await redisClient.set(otpKey, JSON.stringify(otp), { EX: 300 }); // OTP valid for 5 minutes
+
+    // making the content of sending an OTP
+    const subject = "Your OTP for login to Authentication App";
+    const html = getOtpHtml({ email, otp });
+    await sendMail({ email, subject, html });
+    await redisClient.set(rateLimitkey, "true", { EX: 60 }); // 1 min rate limit
+
+    res.status(200).json({
+        message:
+            "If your email is valid, an OTP has been send. It will be valid for 5 minutes.",
     });
 });
