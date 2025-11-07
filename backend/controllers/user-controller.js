@@ -84,3 +84,43 @@ export const registerUser = TryCatch(async (req, res) => {
         email,
     });
 });
+
+export const verifyEmail = TryCatch(async (req, res) => {
+    // GET token from req.params or url
+    const { token } = req.params;
+    if (!token) {
+        res.status(400).json({ message: "Verification token is required" });
+    }
+    const verifyKey = `verify:${token}`;
+    // Get user data from redis using the token
+    const userDataJSON = await redisClient.get(verifyKey);
+    // If no data found, invalid or expired token then
+    if (!userDataJSON) {
+        return res
+            .status(400)
+            .json({ message: "Invalid or expired verification token" });
+    }
+    // After getting data from redis, delete the token from redis
+    await redisClient.del(verifyKey);
+    // Making the JSON data to object
+    const userData = JSON.parse(userDataJSON);
+    // Checking if user already exists in DB or not
+    const existingUser = await UserModel.findOne({ email: userData.email });
+    if (existingUser) {
+        return res
+            .status(409)
+            .json({ message: "User with this email already exists" });
+    }
+    // Means user not exists, create new user in DB
+    const newUser = new UserModel({
+        name: userData.name,
+        email: userData.email,
+        password: userData.password,
+    });
+    await newUser.save();
+    // Finally send response that email verified and user registered successfully
+    res.status(201).json({
+        message: "Email verified and user registered successfully",
+        user: { id: newUser._id, email: newUser.email, name: newUser.name },
+    });
+});
