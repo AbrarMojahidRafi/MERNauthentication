@@ -2,12 +2,11 @@ import { registerSchema } from "../config/zod.js";
 import TryCatch from "../middlewares/TryCatch.js";
 import sanitize from "mongo-sanitize";
 import { UserModel } from "../models/User.js";
-// import redisClient from "../config/redis.js"; // ✅ use from config, not index
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import sendMail from "../config/sendMail.js";
 import { redisClient } from "../config/redis.js";
-// Remove: import { redisClient } from "../index.js";
+import { getVerifyEmailHtml } from "../config/html.js";
 
 export const registerUser = TryCatch(async (req, res) => {
     const senitizedBody = sanitize(req.body);
@@ -72,17 +71,7 @@ export const registerUser = TryCatch(async (req, res) => {
 
     // send verification email logic goes here
     const subject = "Verify your email address for account registration";
-    const verificationUrl = `${
-        process.env.FRONTEND_URL || "http://localhost:3000"
-    }/verify-email?token=${verificationToken}`;
-
-    const html = `
-    <h1>Welcome ${name}!</h1>
-    <p>Please verify your email address by clicking the link below:</p>
-    <a href="${verificationUrl}">Verify Email</a>
-    <p>This link will expire in 5 minutes.</p>
-    <p>If you didn't register for this account, please ignore this email.</p>
-`;
+    const html = getVerifyEmailHtml({ email, token: verificationToken });
 
     await sendMail({ email, subject, html });
 

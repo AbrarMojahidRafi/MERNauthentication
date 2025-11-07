@@ -11,7 +11,7 @@ const sendMail = async ({ email, subject, html }) => {
     });
 
     await transporter.sendMail({
-        from: `"${process.env.FROM_NAME}" <${process.env.FROM_EMAIL}>`,
+        from: process.env.SMTP_USER,
         to: email,
         subject: subject,
         html: html,
@@ -19,4 +19,3 @@ const sendMail = async ({ email, subject, html }) => {
 };
 
 export default sendMail;
-
