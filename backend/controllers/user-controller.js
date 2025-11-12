@@ -7,6 +7,7 @@ import crypto from "crypto";
 import sendMail from "../config/sendMail.js";
 import { redisClient } from "../config/redis.js";
 import { getOtpHtml, getVerifyEmailHtml } from "../config/html.js";
+import { generateToken } from "../config/generateToken.js";
 
 export const registerUser = TryCatch(async (req, res) => {
     const senitizedBody = sanitize(req.body);
@@ -192,5 +193,40 @@ export const loginUser = TryCatch(async (req, res) => {
     res.status(200).json({
         message:
             "If your email is valid, an OTP has been send. It will be valid for 5 minutes.",
+    });
+});
+
+export const verifyLoginOtp = TryCatch(async (req, res) => {
+    // get email and otp from req.body
+    // const senitizedBody = sanitize(req.body);
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+        return res.status(400).json({ message: "Email and OTP are required" });
+    }
+    // adding redis otp key
+    const otpKey = `login-otp:${email}`;
+    // getting stored otp from redis
+    const storedOtpString = await redisClient.get(otpKey);
+    if (!storedOtpString) {
+        return res.status(400).json({ message: "OTP has expired or invalid" });
+    }
+    const storedOtp = JSON.parse(storedOtpString);
+    // comparing the otp
+    if (otp !== storedOtp) {
+        return res.status(400).json({ message: "Invalid OTP" });
+    }
+    // deleting the otp from redis after successful verification
+    await redisClient.del(otpKey);
+    // finding user from DB using email
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+        return res.status(404).json({ message: "User not found" });
+    }
+    // now jwt token or session token will be pursed here for maintaining login session
+    const tokenData = await generateToken(user._id, res);
+    // finally sending success response
+    res.status(200).json({
+        message: `Login successful....\nWelcome ${user.name}`,
+        user,
     });
 });
