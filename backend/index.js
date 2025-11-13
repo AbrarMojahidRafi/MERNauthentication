@@ -8,6 +8,7 @@ import dotenv from "dotenv";
 import userRoutes from "./routes/user.js";
 // import { createClient } from "redis";   // Remove Redis client setup from here. because we are moving it to config/redis.js
 import { connectRedis } from "./config/redis.js";
+import cookieParser from "cookie-parser";
 
 // Remove the entire Redis client setup block and replace with:
 await connectRedis();
@@ -33,6 +34,7 @@ app.use(
         saveUninitialized: false,
     })
 );
+app.use(cookieParser());
 
 // using routes
 app.use("/api/v1", userRoutes);

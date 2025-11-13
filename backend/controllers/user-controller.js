@@ -230,3 +230,13 @@ export const verifyLoginOtp = TryCatch(async (req, res) => {
         user,
     });
 });
+
+// make an api, to get the current logged in user details
+// making first authenticated request
+export const myProfile = TryCatch(async (req, res) => {
+    const user = req.user; // coming from isAuth middleware
+    res.status(200).json({
+        success: true,
+        user,
+    }); // ✅ CORRECT - sending proper response
+});
