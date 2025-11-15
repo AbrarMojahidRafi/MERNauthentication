@@ -7,7 +7,7 @@ import crypto from "crypto";
 import sendMail from "../config/sendMail.js";
 import { redisClient } from "../config/redis.js";
 import { getOtpHtml, getVerifyEmailHtml } from "../config/html.js";
-import { generateToken } from "../config/generateToken.js";
+import { generateAccessToken, generateToken, verifyRefreshToken } from "../config/generateToken.js";
 
 export const registerUser = TryCatch(async (req, res) => {
     const senitizedBody = sanitize(req.body);
@@ -239,4 +239,22 @@ export const myProfile = TryCatch(async (req, res) => {
         success: true,
         user,
     }); // ✅ CORRECT - sending proper response
+});
+
+export const refreshToken = TryCatch(async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) {
+        return res.status(403).json({ message: "Please login - no token" });
+    }
+
+    const decodedData = await verifyRefreshToken(refreshToken);
+    if (!decodedData) {
+        return res.status(400).json({ message: "Token expired or invalid" });
+    }
+
+    const newAccessToken = generateAccessToken(decodedData.id, res);
+    res.status(200).json({
+        message: "Access token refreshed successfully",
+        accessToken: newAccessToken,
+    });
 });

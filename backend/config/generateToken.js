@@ -5,7 +5,6 @@ export const generateToken = async (id, res) => {
     const accessToken = jwt.sign({ id }, process.env.JWT_SECRET, {
         expiresIn: "1m",
     }); // Token valid for 1 minute
-
     const refreshToken = jwt.sign({ id }, process.env.REFRESH_SECRET, {
         expiresIn: "7d",
     }); // Refresh token valid for 7 days
@@ -24,4 +23,32 @@ export const generateToken = async (id, res) => {
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
     return { accessToken, refreshToken };
+};
+
+export const verifyRefreshToken = async (refreshToken) => {
+    try {
+        const decode = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
+        const storedRefreshToken = await redisClient.get(
+            `refresh-token:${decode.id}`
+        );
+        if (storedRefreshToken === refreshToken) {
+            return decode;
+        }
+        return null;
+    } catch (error) {
+        return null;
+    }
+};
+
+export const generateAccessToken = (id, res) => {
+    const accessToken = jwt.sign({ id }, process.env.JWT_SECRET, {
+        expiresIn: "1m",
+    }); // Token valid for 1 minute
+    res.cookie("accessToken", accessToken, {
+        httpOnly: true, // only readable by server
+        // secure: true, // only sent over https
+        sameSite: "strict", // prevent CSRF attacks
+        maxAge: 60 * 1000, // 1 minute
+    });
+    return accessToken;
 };

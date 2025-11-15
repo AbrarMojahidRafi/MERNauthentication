@@ -5,6 +5,7 @@ const router = Router();
 import {
     loginUser,
     myProfile,
+    refreshToken,
     registerUser,
     verifyEmail,
     verifyLoginOtp,
@@ -17,5 +18,6 @@ router.route("/verify/:token").post(verifyEmail);
 router.route("/login").post(loginUser); // loginUser controller to be added later
 router.route("/verify-otp").post(verifyLoginOtp);
 router.route("/me").get(isAuth, myProfile);
+router.route("/refresh").post(refreshToken);
 
 export default router;
