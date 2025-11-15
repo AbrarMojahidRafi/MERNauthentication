@@ -4,6 +4,7 @@ const router = Router();
 
 import {
     loginUser,
+    logoutUser,
     myProfile,
     refreshToken,
     registerUser,
@@ -19,5 +20,6 @@ router.route("/login").post(loginUser); // loginUser controller to be added late
 router.route("/verify-otp").post(verifyLoginOtp);
 router.route("/me").get(isAuth, myProfile);
 router.route("/refresh").post(refreshToken);
+router.route("/logout").post(isAuth, logoutUser);
 
 export default router;

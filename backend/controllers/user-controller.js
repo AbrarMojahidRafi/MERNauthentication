@@ -7,7 +7,12 @@ import crypto from "crypto";
 import sendMail from "../config/sendMail.js";
 import { redisClient } from "../config/redis.js";
 import { getOtpHtml, getVerifyEmailHtml } from "../config/html.js";
-import { generateAccessToken, generateToken, verifyRefreshToken } from "../config/generateToken.js";
+import {
+    generateAccessToken,
+    generateToken,
+    revokeRefreshToken,
+    verifyRefreshToken,
+} from "../config/generateToken.js";
 
 export const registerUser = TryCatch(async (req, res) => {
     const senitizedBody = sanitize(req.body);
@@ -257,4 +262,16 @@ export const refreshToken = TryCatch(async (req, res) => {
         message: "Access token refreshed successfully",
         accessToken: newAccessToken,
     });
+});
+
+export const logoutUser = TryCatch(async (req, res) => {
+    const userId = req.user._id;
+    await revokeRefreshToken(userId);
+
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+
+    await redisClient.del(`user:${userId}`);
+
+    res.status(200).json({ message: "Logged out successfully" });
 });
