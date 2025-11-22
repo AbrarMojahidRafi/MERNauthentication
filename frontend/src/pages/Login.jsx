@@ -1,6 +1,9 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { toast } from "react-toastify";
+import { server } from "../main";
+import axios from "axios";
 
 const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -8,11 +11,33 @@ const Login = () => {
         email: "",
         password: "",
     });
+    const [isBtnLoading, setIsBtnLoading] = useState(false);
+    const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("Login data:", formData);
+        // console.log("Login data:", formData);
         // এখানে আপনার login logic যুক্ত করবেন
+        setIsBtnLoading(true);
+        try {
+            const { data } = await axios.post(
+                `${server}/api/v1/login`,
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    withCredentials: true,
+                }
+            );
+            toast.success(data.message);
+            localStorage.setItem("email", formData.email);
+            navigate("/verify-otp");
+        } catch (error) {
+            toast.error(error.response.data.message);
+        } finally {
+            setIsBtnLoading(false);
+        }
     };
 
     const handleChange = (e) => {
@@ -123,8 +148,9 @@ const Login = () => {
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-200 shadow-lg hover:shadow-xl">
-                            Login
+                            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-200 shadow-lg hover:shadow-xl"
+                            disabled={isBtnLoading}>
+                            {isBtnLoading ? "Logging in..." : "Login"}
                         </button>
                     </form>
 
